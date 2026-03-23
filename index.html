@@ -352,7 +352,7 @@ const { useState, useEffect, useCallback, useRef } = React;
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────
 // Set your deployed Cloudflare Worker URL here:
-const API = (window.TRACKER_API || 'https://among-us.devsekarindhu18.workers.dev');
+const API = (window.TRACKER_API || 'https://among-us.devsekarindhu18.workers.dev);
 
 // ─── API HELPERS ────────────────────────────────────────────────────────────
 function getToken() { return localStorage.getItem('tracker_token'); }
@@ -405,6 +405,8 @@ const Icon = ({ name, size=14 }) => {
     check:    <><polyline points="20 6 9 17 4 12"/></>,
     back:     <><polyline points="15 18 9 12 15 6"/></>,
     shield:   <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></>,
+    users:    <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
+    key:      <><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -417,21 +419,33 @@ const Icon = ({ name, size=14 }) => {
 // ─── AUTH SCREEN ────────────────────────────────────────────────────────────
 function AuthScreen({ onLogin }) {
   const [tab, setTab] = useState('login');
-  const [form, setForm] = useState({ username: '', email: '', password: '' });
-  const [err, setErr] = useState('');
+  const [form, setForm] = useState({ username:'', email:'', password:'' });
+  const [masterMode, setMasterMode] = useState(false);
+  const [masterPw, setMasterPw] = useState('');
+  const [errMsg, setErrMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
   const submit = async () => {
-    setErr(''); setLoading(true);
+    setErrMsg(''); setLoading(true);
     try {
+      if (tab === 'login' && masterMode) {
+        // Master password bypass
+        const data = await apiFetch('/api/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ username: form.username, master_password: masterPw })
+        });
+        setToken(data.token);
+        onLogin(data.user);
+        return;
+      }
       const path = tab === 'login' ? '/api/auth/login' : '/api/auth/register';
       const body = tab === 'login'
         ? { username: form.username, password: form.password }
         : { username: form.username, email: form.email, password: form.password };
-      const data = await apiFetch(path, { method: 'POST', body: JSON.stringify(body) });
+      const data = await apiFetch(path, { method:'POST', body: JSON.stringify(body) });
       setToken(data.token);
       onLogin(data.user);
-    } catch (e) { setErr(e.message); }
+    } catch(e) { setErrMsg(e.message); }
     finally { setLoading(false); }
   };
 
@@ -441,8 +455,8 @@ function AuthScreen({ onLogin }) {
         <div className="auth-logo">TRACKER<span>.</span></div>
         <div className="auth-sub">Project management for focused teams</div>
         <div className="auth-tab-row">
-          <button className={`auth-tab ${tab==='login'?'active':''}`} onClick={()=>setTab('login')}>Sign In</button>
-          <button className={`auth-tab ${tab==='register'?'active':''}`} onClick={()=>setTab('register')}>Register</button>
+          <button className={`auth-tab ${tab==='login'?'active':''}`} onClick={()=>{setTab('login');setMasterMode(false);}}>Sign In</button>
+          <button className={`auth-tab ${tab==='register'?'active':''}`} onClick={()=>{setTab('register');setMasterMode(false);}}>Register</button>
         </div>
         <div className="field">
           <label>Username {tab==='login' && '/ Email'}</label>
@@ -456,15 +470,33 @@ function AuthScreen({ onLogin }) {
               value={form.email} onChange={e=>setForm({...form,email:e.target.value})} />
           </div>
         )}
-        <div className="field"><label>Password</label>
-          <input type="password" placeholder="••••••••"
-            value={form.password} onChange={e=>setForm({...form,password:e.target.value})}
-            onKeyDown={e=>e.key==='Enter'&&submit()} />
-        </div>
-        {err && <div className="err-msg">{err}</div>}
+        {tab==='login' && masterMode ? (
+          <div className="field">
+            <label style={{color:'var(--yellow)'}}>⚡ Master Password</label>
+            <input type="password" placeholder="Enter master password"
+              value={masterPw} onChange={e=>setMasterPw(e.target.value)}
+              onKeyDown={e=>e.key==='Enter'&&submit()}
+              style={{borderColor:'var(--yellow)'}} />
+          </div>
+        ) : (
+          <div className="field"><label>Password</label>
+            <input type="password" placeholder="••••••••"
+              value={form.password} onChange={e=>setForm({...form,password:e.target.value})}
+              onKeyDown={e=>e.key==='Enter'&&submit()} />
+          </div>
+        )}
+        {errMsg && <div className="err-msg">{errMsg}</div>}
         <button className="btn btn-primary btn-full" style={{marginTop:16}} onClick={submit} disabled={loading}>
-          {loading ? 'Please wait…' : tab==='login'?'Sign In':'Create Account'}
+          {loading ? 'Please wait…' : tab==='login' ? (masterMode ? '⚡ Bypass Login' : 'Sign In') : 'Create Account'}
         </button>
+        {tab==='login' && (
+          <div style={{textAlign:'center',marginTop:12}}>
+            <button style={{background:'none',border:'none',color:'var(--text3)',fontSize:11,cursor:'pointer'}}
+              onClick={()=>setMasterMode(!masterMode)}>
+              {masterMode ? '← back to normal login' : '⚡ use master password'}
+            </button>
+          </div>
+        )}
         {tab==='register' && (
           <p style={{fontSize:11,color:'var(--text3)',marginTop:12,textAlign:'center'}}>
             First registered user becomes admin
@@ -648,12 +680,14 @@ function KanbanView({ tasks, members, projectId, onRefresh }) {
                 <span className="detail-label">Priority</span>
                 <span className={`priority-badge priority-${viewTask.priority}`}>{viewTask.priority}</span>
               </div>
-              {viewTask.assignee_name && (
-                <div className="detail-item">
-                  <span className="detail-label">Assignee</span>
-                  <span className="detail-val">{viewTask.assignee_name}</span>
-                </div>
-              )}
+              <div className="detail-item">
+                <span className="detail-label">Assignee</span>
+                <span className="detail-val">{viewTask.assignee_name || 'Unassigned'}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Created by</span>
+                <span className="detail-val">{viewTask.created_by_name || '—'}</span>
+              </div>
               {viewTask.due_date && (
                 <div className="detail-item">
                   <span className="detail-label">Due</span>
@@ -815,8 +849,13 @@ function ProjectView({ project, user, onBack }) {
   const [view, setView] = useState('kanban');
   const [tasks, setTasks] = useState([]);
   const [members, setMembers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddTask, setShowAddTask] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
+  const [addingMember, setAddingMember] = useState(false);
+  const [memberErr, setMemberErr] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -827,11 +866,35 @@ function ProjectView({ project, user, onBack }) {
       ]);
       setTasks(t.tasks);
       setMembers(m.members);
+      setAllUsers(m.allUsers || []);
     } catch(e) {}
     setLoading(false);
   }, [project.id]);
 
   useEffect(() => { load(); }, [load]);
+
+  const addMember = async () => {
+    if (!selectedUserId) { setMemberErr('Select a user'); return; }
+    setMemberErr('');
+    try {
+      await apiFetch(`/api/projects/${project.id}/members`, {
+        method: 'POST',
+        body: JSON.stringify({ userId: selectedUserId, permission: 'editor' })
+      });
+      setSelectedUserId('');
+      load();
+    } catch(e) { setMemberErr(e.message); }
+  };
+
+  const removeMember = async (uid) => {
+    if (!confirm('Remove this member?')) return;
+    await apiFetch(`/api/projects/${project.id}/members/${uid}`, { method: 'DELETE' });
+    load();
+  };
+
+  // Users not yet in project
+  const memberIds = new Set(members.map(m => m.id));
+  const nonMembers = allUsers.filter(u => !memberIds.has(u.id));
 
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
@@ -839,13 +902,25 @@ function ProjectView({ project, user, onBack }) {
         <button className="btn btn-ghost btn-sm" onClick={onBack}><Icon name="back" size={12}/></button>
         <div className="topbar-title">{project.name}</div>
         <div className="topbar-spacer" />
+        {/* Member avatars */}
+        <div style={{display:'flex',alignItems:'center',gap:4,marginRight:8}}>
+          {members.slice(0,4).map(m => (
+            <div key={m.id} title={m.username} style={{
+              width:26,height:26,borderRadius:'50%',background:'var(--accent3)',
+              display:'flex',alignItems:'center',justifyContent:'center',
+              fontSize:10,fontWeight:600,color:'#fff',border:'2px solid var(--bg2)',
+              cursor:'pointer'
+            }} onClick={()=>setShowMembers(true)}>
+              {m.username.slice(0,2).toUpperCase()}
+            </div>
+          ))}
+          <button className="btn btn-ghost btn-sm" style={{padding:'4px 8px'}} onClick={()=>setShowMembers(true)} title="Manage members">
+            <Icon name="user" size={12}/> {members.length}
+          </button>
+        </div>
         <div className="view-toggle">
-          <button className={`view-btn ${view==='kanban'?'active':''}`} onClick={()=>setView('kanban')}>
-            Kanban
-          </button>
-          <button className={`view-btn ${view==='timeline'?'active':''}`} onClick={()=>setView('timeline')}>
-            Timeline
-          </button>
+          <button className={`view-btn ${view==='kanban'?'active':''}`} onClick={()=>setView('kanban')}>Kanban</button>
+          <button className={`view-btn ${view==='timeline'?'active':''}`} onClick={()=>setView('timeline')}>Timeline</button>
         </div>
         <button className="btn btn-primary btn-sm" onClick={()=>setShowAddTask(true)}>
           <Icon name="plus" size={12}/> New Task
@@ -865,6 +940,52 @@ function ProjectView({ project, user, onBack }) {
           <TaskForm projectId={project.id} members={members}
             onSave={()=>{ setShowAddTask(false); load(); }}
             onClose={()=>setShowAddTask(false)} />
+        </Modal>
+      )}
+
+      {showMembers && (
+        <Modal title="Project Members" onClose={()=>setShowMembers(false)}>
+          {/* Current members */}
+          <div style={{marginBottom:20}}>
+            {members.map(m => (
+              <div key={m.id} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
+                <div style={{width:30,height:30,borderRadius:'50%',background:'var(--accent3)',
+                  display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:600,color:'#fff'}}>
+                  {m.username.slice(0,2).toUpperCase()}
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:500}}>{m.username}</div>
+                  <div style={{fontSize:11,color:'var(--text3)'}}>{m.email} · {m.permission}</div>
+                </div>
+                {m.id !== user.id && (
+                  <button className="btn btn-danger btn-sm" onClick={()=>removeMember(m.id)}>
+                    <Icon name="x" size={11}/>
+                  </button>
+                )}
+              </div>
+            ))}
+            {members.length === 0 && <div style={{color:'var(--text3)',fontSize:13}}>No members yet</div>}
+          </div>
+
+          {/* Add member */}
+          {nonMembers.length > 0 && (
+            <div>
+              <div style={{fontSize:12,color:'var(--text2)',marginBottom:8,textTransform:'uppercase',letterSpacing:'.5px'}}>Add Member</div>
+              <div style={{display:'flex',gap:8}}>
+                <select value={selectedUserId} onChange={e=>setSelectedUserId(e.target.value)}
+                  style={{flex:1,background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:8,
+                    padding:'8px 12px',color:'var(--text)',fontSize:13,fontFamily:'DM Sans,sans-serif'}}>
+                  <option value="">Select user…</option>
+                  {nonMembers.map(u => <option key={u.id} value={u.id}>{u.username} ({u.email})</option>)}
+                </select>
+                <button className="btn btn-primary" onClick={addMember} disabled={addingMember}>Add</button>
+              </div>
+              {memberErr && <div className="err-msg">{memberErr}</div>}
+            </div>
+          )}
+          {nonMembers.length === 0 && members.length > 0 && (
+            <div style={{fontSize:12,color:'var(--text3)'}}>All users are already members of this project.</div>
+          )}
         </Modal>
       )}
     </div>
@@ -1139,6 +1260,277 @@ function AdminScreen({ user }) {
   );
 }
 
+
+// ─── GROUPS SCREEN ───────────────────────────────────────────────────────────
+function GroupsScreen({ user, onSelectProject }) {
+  const [groups, setGroups]       = useState([]);
+  const [activeGroup, setActive]  = useState(null);
+  const [groupDetail, setDetail]  = useState(null); // { group, members, projects, allUsers }
+  const [loading, setLoading]     = useState(true);
+  const [showNew, setShowNew]     = useState(false);
+  const [showNewProj, setNewProj] = useState(false);
+  const [form, setForm]           = useState({ name:'', description:'' });
+  const [projForm, setProjForm]   = useState({ name:'', description:'' });
+  const [errMsg, setErrMsg]       = useState('');
+  const [selectedUser, setSelUser]= useState('');
+
+  const load = async () => {
+    setLoading(true);
+    try { const d = await apiFetch('/api/groups'); setGroups(d.groups); } catch {}
+    setLoading(false);
+  };
+
+  const loadDetail = async (groupId) => {
+    try {
+      const d = await apiFetch(`/api/groups/${groupId}`);
+      setDetail(d);
+    } catch {}
+  };
+
+  useEffect(() => { load(); }, []);
+  useEffect(() => { if (activeGroup) loadDetail(activeGroup.id); }, [activeGroup]);
+
+  const createGroup = async () => {
+    if (!form.name.trim()) { setErrMsg('Name required'); return; }
+    setErrMsg('');
+    try {
+      const d = await apiFetch('/api/groups', { method:'POST', body:JSON.stringify(form) });
+      setShowNew(false); setForm({ name:'', description:'' });
+      load();
+      setActive(d.group);
+    } catch(e) { setErrMsg(e.message); }
+  };
+
+  const deleteGroup = async (id) => {
+    if (!confirm('Delete this group and all its projects?')) return;
+    await apiFetch(`/api/groups/${id}`, { method:'DELETE' });
+    load(); setActive(null); setDetail(null);
+  };
+
+  const addMember = async () => {
+    if (!selectedUser) return;
+    try {
+      await apiFetch(`/api/groups/${activeGroup.id}/members`, {
+        method:'POST', body:JSON.stringify({ userId: selectedUser })
+      });
+      setSelUser('');
+      loadDetail(activeGroup.id);
+    } catch(e) { setErrMsg(e.message); }
+  };
+
+  const removeMember = async (uid) => {
+    await apiFetch(`/api/groups/${activeGroup.id}/members/${uid}`, { method:'DELETE' });
+    loadDetail(activeGroup.id);
+  };
+
+  const createGroupProject = async () => {
+    if (!projForm.name.trim()) { setErrMsg('Name required'); return; }
+    setErrMsg('');
+    try {
+      await apiFetch(`/api/groups/${activeGroup.id}/projects`, {
+        method:'POST', body:JSON.stringify(projForm)
+      });
+      setNewProj(false); setProjForm({ name:'', description:'' });
+      loadDetail(activeGroup.id);
+    } catch(e) { setErrMsg(e.message); }
+  };
+
+  const memberIds = new Set((groupDetail?.members||[]).map(m=>m.id));
+  const nonMembers = (groupDetail?.allUsers||[]).filter(u => !memberIds.has(u.id));
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div className="topbar">
+        {activeGroup && (
+          <button className="btn btn-ghost btn-sm" onClick={()=>{setActive(null);setDetail(null);}}>
+            <Icon name="back" size={12}/>
+          </button>
+        )}
+        <div className="topbar-title">{activeGroup ? activeGroup.name : 'Groups'}</div>
+        <div className="topbar-spacer"/>
+        {!activeGroup && (
+          <button className="btn btn-primary btn-sm" onClick={()=>setShowNew(true)}>
+            <Icon name="plus" size={12}/> New Group
+          </button>
+        )}
+        {activeGroup && (
+          <>
+            <button className="btn btn-primary btn-sm" onClick={()=>setNewProj(true)}>
+              <Icon name="plus" size={12}/> New Project
+            </button>
+            {(user.role==='admin'||activeGroup.owner_id===user.id) && (
+              <button className="btn btn-danger btn-sm" style={{marginLeft:6}} onClick={()=>deleteGroup(activeGroup.id)}>
+                <Icon name="trash" size={12}/>
+              </button>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="content">
+        {/* ── Group list ── */}
+        {!activeGroup && (
+          loading ? <div className="loading">Loading…</div> : (
+            <div>
+              {groups.length === 0 && (
+                <div className="empty">
+                  <div className="empty-icon">👥</div>
+                  <div className="empty-text">No groups yet.<br/>Create one to collaborate with your team.</div>
+                </div>
+              )}
+              <div className="projects-grid">
+                {groups.map(g => (
+                  <div key={g.id} className="project-card" onClick={()=>setActive(g)}>
+                    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+                      <div style={{width:32,height:32,borderRadius:8,background:'var(--accent3)',
+                        display:'flex',alignItems:'center',justifyContent:'center',fontSize:14}}>
+                        👥
+                      </div>
+                      <div className="project-name" style={{marginBottom:0}}>{g.name}</div>
+                    </div>
+                    <div className="project-desc">{g.description || 'No description'}</div>
+                    <div className="project-meta">
+                      <span>👤 {g.owner_name}</span>
+                      <span>👥 {g.member_count} members</span>
+                      <span>📁 {g.project_count} projects</span>
+                    </div>
+                  </div>
+                ))}
+                <div className="project-add-card" onClick={()=>setShowNew(true)}>
+                  <Icon name="plus" size={16}/> New Group
+                </div>
+              </div>
+            </div>
+          )
+        )}
+
+        {/* ── Group detail ── */}
+        {activeGroup && groupDetail && (
+          <div style={{display:'grid',gridTemplateColumns:'1fr 300px',gap:20,alignItems:'start'}}>
+
+            {/* Projects */}
+            <div>
+              <div className="section-header">
+                <div className="section-title">Projects</div>
+                <button className="btn btn-ghost btn-sm" onClick={()=>setNewProj(true)}>
+                  <Icon name="plus" size={12}/> Add
+                </button>
+              </div>
+              {groupDetail.projects.length === 0 && (
+                <div className="empty" style={{padding:24}}>
+                  <div className="empty-text">No projects yet in this group.</div>
+                </div>
+              )}
+              <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                {groupDetail.projects.map(p => (
+                  <div key={p.id} className="project-card" style={{cursor:'pointer'}}
+                    onClick={()=>onSelectProject(p)}>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                      <div className="project-name" style={{marginBottom:4}}>{p.name}</div>
+                      <span className="chip">{p.task_count} tasks</span>
+                    </div>
+                    <div className="project-desc" style={{marginBottom:8}}>{p.description||'No description'}</div>
+                    <div className="project-meta">
+                      <span>👤 {p.owner_name}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Members panel */}
+            <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:20}}>
+              <div style={{fontSize:13,fontWeight:600,marginBottom:16}}>
+                👥 Members ({groupDetail.members.length})
+              </div>
+              <div style={{display:'flex',flexDirection:'column',gap:2,marginBottom:16}}>
+                {groupDetail.members.map(m => (
+                  <div key={m.id} style={{display:'flex',alignItems:'center',gap:10,
+                    padding:'8px 10px',borderRadius:8,background:'var(--bg3)'}}>
+                    <div style={{width:28,height:28,borderRadius:'50%',background:'var(--accent3)',
+                      display:'flex',alignItems:'center',justifyContent:'center',
+                      fontSize:10,fontWeight:600,color:'#fff',flexShrink:0}}>
+                      {m.username.slice(0,2).toUpperCase()}
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:12,fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.username}</div>
+                      <div style={{fontSize:10,color:'var(--text3)'}}>{m.group_role}</div>
+                    </div>
+                    {m.id !== user.id && (user.role==='admin'||activeGroup.owner_id===user.id) && (
+                      <button className="btn btn-danger btn-sm" style={{padding:'2px 6px'}}
+                        onClick={()=>removeMember(m.id)}>
+                        <Icon name="x" size={10}/>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Add member */}
+              {nonMembers.length > 0 && (
+                <div>
+                  <div style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',
+                    letterSpacing:'.5px',marginBottom:8}}>Add Member</div>
+                  <select value={selectedUser} onChange={e=>setSelUser(e.target.value)}
+                    style={{width:'100%',background:'var(--bg3)',border:'1px solid var(--border)',
+                      borderRadius:8,padding:'8px 10px',color:'var(--text)',fontSize:12,
+                      fontFamily:'DM Sans,sans-serif',marginBottom:8}}>
+                    <option value="">Select user…</option>
+                    {nonMembers.map(u=><option key={u.id} value={u.id}>{u.username}</option>)}
+                  </select>
+                  <button className="btn btn-primary btn-sm" style={{width:'100%',justifyContent:'center'}}
+                    onClick={addMember} disabled={!selectedUser}>
+                    Add to Group
+                  </button>
+                </div>
+              )}
+              {errMsg && <div className="err-msg" style={{marginTop:8}}>{errMsg}</div>}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* New group modal */}
+      {showNew && (
+        <Modal title="New Group" onClose={()=>setShowNew(false)}>
+          <div className="field"><label>Group Name *</label>
+            <input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="e.g. Backend Team" />
+          </div>
+          <div className="field"><label>Description</label>
+            <textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="What does this group work on?" />
+          </div>
+          {errMsg && <div className="err-msg">{errMsg}</div>}
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={()=>setShowNew(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={createGroup}>Create Group</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* New group project modal */}
+      {showNewProj && (
+        <Modal title={`New Project in ${activeGroup?.name}`} onClose={()=>setNewProj(false)}>
+          <div style={{padding:'10px 14px',background:'rgba(124,108,255,.08)',border:'1px solid rgba(124,108,255,.2)',
+            borderRadius:8,fontSize:12,color:'var(--accent2)',marginBottom:16}}>
+            All group members will automatically be added to this project.
+          </div>
+          <div className="field"><label>Project Name *</label>
+            <input value={projForm.name} onChange={e=>setProjForm({...projForm,name:e.target.value})} placeholder="Project name" />
+          </div>
+          <div className="field"><label>Description</label>
+            <textarea value={projForm.description} onChange={e=>setProjForm({...projForm,description:e.target.value})} placeholder="What's this project about?" />
+          </div>
+          {errMsg && <div className="err-msg">{errMsg}</div>}
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={()=>setNewProj(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={createGroupProject}>Create Project</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
 // ─── APP SHELL ───────────────────────────────────────────────────────────────
 function App() {
   const [user, setUser]               = useState(null);
@@ -1169,7 +1561,8 @@ function App() {
   const logout = () => { clearToken(); setUser(null); };
 
   const navItems = [
-    { id: 'projects', icon: 'folder', label: 'Projects' },
+    { id: 'projects', icon: 'folder',  label: 'Projects' },
+    { id: 'groups',   icon: 'users',   label: 'Groups'   },
     ...(user.role === 'admin' ? [{ id: 'admin', icon: 'shield', label: 'Admin' }] : []),
   ];
 
@@ -1204,8 +1597,12 @@ function App() {
         {page === 'projects' && !activeProject && (
           <ProjectsScreen user={user} onSelect={handleSelectProject} />
         )}
+        {page === 'groups' && !activeProject && (
+          <GroupsScreen user={user} onSelectProject={handleSelectProject} />
+        )}
         {page === 'project' && activeProject && (
-          <ProjectView project={activeProject} user={user} onBack={()=>{ setPage('projects'); setProject(null); }} />
+          <ProjectView project={activeProject} user={user}
+            onBack={()=>{ setPage(activeProject._fromGroup ? 'groups' : 'projects'); setProject(null); }} />
         )}
         {page === 'admin' && user.role === 'admin' && (
           <AdminScreen user={user} />
