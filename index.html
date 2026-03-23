@@ -167,6 +167,7 @@ body {
 .view-btn.active { background: var(--bg3); color: var(--text); border-color: var(--border2); }
 
 .content { flex: 1; overflow: auto; padding: 24px; }
+.content.content-board { padding: 0; overflow: hidden; }
 
 /* ─── PROJECTS LIST ─────────────────────────────────────────────── */
 .projects-grid {
@@ -189,43 +190,60 @@ body {
 }
 .project-add-card:hover { border-color: var(--accent); color: var(--accent2); }
 
-/* ─── KANBAN ────────────────────────────────────────────────────── */
-.kanban { display: flex; gap: 16px; height: 100%; align-items: flex-start; }
-.kanban-col {
-  min-width: 280px; width: 280px; background: var(--bg2);
-  border: 1px solid var(--border); border-radius: var(--radius);
-  display: flex; flex-direction: column; max-height: calc(100vh - 130px);
+/* ─── BOARD (table layout) ──────────────────────────────────────── */
+.board-wrap { display: flex; height: 100%; overflow-x: auto; overflow-y: hidden; }
+.board-table {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  height: 100%; width: 100%; min-width: 800px;
+  border-left: 1px solid var(--border);
 }
-.kanban-col-header {
-  padding: 14px 16px; border-bottom: 1px solid var(--border);
+.board-col {
+  display: flex; flex-direction: column;
+  border-right: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  background: var(--bg); transition: background .15s;
+}
+.board-col.drag-over { background: rgba(124,108,255,.06); }
+.board-col-header {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg2); flex-shrink: 0;
 }
-.kanban-col-title {
-  display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;
+.board-col-title {
+  display: flex; align-items: center; gap: 8px; font-size: 11px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: .8px;
 }
-.col-dot { width: 8px; height: 8px; border-radius: 50%; }
+.col-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .col-count {
   font-size: 11px; color: var(--text3); background: var(--bg3);
-  padding: 2px 7px; border-radius: 20px; font-family: 'Space Mono', monospace;
+  padding: 1px 7px; border-radius: 20px; font-family: 'Space Mono', monospace;
 }
-.kanban-tasks { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
-.kanban-add-btn {
-  margin: 8px 12px 12px; padding: 8px; background: transparent;
-  border: 1px dashed var(--border); border-radius: 7px;
+.board-tasks {
+  flex: 1; overflow-y: auto; padding: 10px;
+  display: flex; flex-direction: column; gap: 7px;
+}
+.board-add-btn {
+  margin: 0 10px 10px; padding: 7px 10px; background: transparent;
+  border: 1px dashed var(--border); border-radius: 7px; flex-shrink: 0;
   color: var(--text3); font-size: 12px; cursor: pointer;
   display: flex; align-items: center; gap: 6px; transition: all .12s;
   font-family: 'DM Sans', sans-serif;
 }
-.kanban-add-btn:hover { border-color: var(--accent); color: var(--accent2); }
+.board-add-btn:hover { border-color: var(--accent); color: var(--accent2); }
 
 /* Task card */
 .task-card {
-  background: var(--bg3); border: 1px solid var(--border);
-  border-radius: 8px; padding: 12px; cursor: pointer;
-  transition: all .12s;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 11px 12px; cursor: grab;
+  transition: border-color .12s, box-shadow .12s, opacity .12s;
+  user-select: none;
 }
-.task-card:hover { border-color: var(--border2); box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
-.task-title { font-size: 13px; font-weight: 500; line-height: 1.4; margin-bottom: 8px; }
+.task-card:active { cursor: grabbing; }
+.task-card:hover { border-color: var(--border2); box-shadow: 0 2px 12px rgba(0,0,0,0.35); }
+.task-card.dragging { opacity: .3; }
+.task-card.drop-target { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(124,108,255,.25); }
+.task-title { font-size: 13px; font-weight: 500; line-height: 1.4; margin-bottom: 7px; }
 .task-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .priority-badge {
   font-size: 10px; padding: 2px 7px; border-radius: 20px;
@@ -240,8 +258,29 @@ body {
 .task-assignee {
   margin-left: auto; width: 22px; height: 22px; border-radius: 50%;
   background: var(--accent3); display: flex; align-items: center; justify-content: center;
-  font-size: 9px; font-weight: 600; color: #fff;
+  font-size: 9px; font-weight: 600; color: #fff; flex-shrink: 0;
 }
+
+/* ─── MARKDOWN in cards ─────────────────────────────────────────── */
+.md { font-size: 12px; color: var(--text2); line-height: 1.55; margin-bottom: 7px; }
+.md p  { margin: 0 0 3px; }
+.md strong { color: var(--text); font-weight: 600; }
+.md em { font-style: italic; }
+.md code {
+  font-family: 'Space Mono', monospace; font-size: 11px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 3px; padding: 0 4px;
+}
+.md pre { background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 6px; padding: 7px 10px; overflow-x: auto; margin: 3px 0; }
+.md pre code { background: none; border: none; padding: 0; font-size: 11px; }
+.md ul, .md ol { padding-left: 16px; margin: 2px 0; }
+.md li { margin: 1px 0; }
+.md h1,.md h2,.md h3 { color: var(--text); font-weight: 600; margin: 3px 0 2px; font-size: 13px; }
+.md a { color: var(--accent2); text-decoration: none; }
+.md a:hover { text-decoration: underline; }
+.md blockquote { border-left: 3px solid var(--border2); padding-left: 10px; color: var(--text3); margin: 3px 0; }
+.md hr { border: none; border-top: 1px solid var(--border); margin: 5px 0; }
 
 /* ─── TIMELINE ──────────────────────────────────────────────────── */
 .timeline-wrap { overflow: auto; }
@@ -352,7 +391,7 @@ const { useState, useEffect, useCallback, useRef } = React;
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────
 // Set your deployed Cloudflare Worker URL here:
-const API = (window.TRACKER_API || 'https://among-us.devsekarindhu18.workers.dev');
+const API = (window.TRACKER_API || 'https://tracker-worker.YOUR-SUBDOMAIN.workers.dev');
 
 // ─── API HELPERS ────────────────────────────────────────────────────────────
 function getToken() { return localStorage.getItem('tracker_token'); }
@@ -559,8 +598,8 @@ function TaskForm({ projectId, task, members, onSave, onClose, defaultStatus }) 
       <div className="field"><label>Title *</label>
         <input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} placeholder="Task title" />
       </div>
-      <div className="field"><label>Description</label>
-        <textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Details…" />
+      <div className="field"><label>Description <span style={{fontWeight:400,opacity:.5,textTransform:'none',letterSpacing:0}}>— markdown supported</span></label>
+        <textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder={"Details… supports **bold**, `code`, - lists, ## headings"} style={{minHeight:100}} />
       </div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
         <div className="field"><label>Status</label>
@@ -599,13 +638,58 @@ function TaskForm({ projectId, task, members, onSave, onClose, defaultStatus }) 
   );
 }
 
-// ─── KANBAN VIEW ─────────────────────────────────────────────────────────────
-function KanbanView({ tasks, members, projectId, onRefresh }) {
-  const [addingTo, setAddingTo] = useState(null);
-  const [editTask, setEditTask] = useState(null);
-  const [viewTask, setViewTask] = useState(null);
+// ─── MARKDOWN RENDERER ───────────────────────────────────────────────────────
+function renderMd(text) {
+  if (!text) return '';
+  let h = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // code blocks
+  h = h.replace(/```[\s\S]*?```/g, m => {
+    const inner = m.slice(3, -3).replace(/^\w*\n?/, '');
+    return `<pre><code>${inner}</code></pre>`;
+  });
+  // inline code
+  h = h.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // headings
+  h = h.replace(/^### (.+)$/gm,'<h3>$1</h3>');
+  h = h.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  h = h.replace(/^# (.+)$/gm,  '<h1>$1</h1>');
+  // bold / italic
+  h = h.replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>');
+  h = h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  h = h.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  // blockquote
+  h = h.replace(/^&gt; (.+)$/gm,'<blockquote>$1</blockquote>');
+  // hr
+  h = h.replace(/^---$/gm,'<hr/>');
+  // lists
+  h = h.replace(/^[-*] (.+)$/gm,'<li>$1</li>');
+  h = h.replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`);
+  h = h.replace(/^\d+\. (.+)$/gm,'<li>$1</li>');
+  // links
+  h = h.replace(/\[(.+?)\]\((.+?)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+  // paragraphs (lines not wrapped in block tags)
+  h = h.split('\n').map(line => {
+    if (/^<(h[123]|pre|ul|ol|li|blockquote|hr)/.test(line.trim()) || line.trim() === '') return line;
+    return `<p>${line}</p>`;
+  }).join('\n');
+  return h;
+}
 
-  const byStatus = id => tasks.filter(t=>t.status===id);
+function MdPreview({ text, limit = 120 }) {
+  const preview = text && text.length > limit ? text.slice(0, limit) + '…' : text;
+  return <div className="md" dangerouslySetInnerHTML={{ __html: renderMd(preview) }} />;
+}
+
+// ─── BOARD VIEW (table layout + drag & drop) ─────────────────────────────────
+function KanbanView({ tasks, members, projectId, onRefresh }) {
+  const [addingTo,  setAddingTo]  = useState(null);
+  const [editTask,  setEditTask]  = useState(null);
+  const [viewTask,  setViewTask]  = useState(null);
+  const [dragId,    setDragId]    = useState(null);
+  const [overCol,   setOverCol]   = useState(null);
+
+  const byStatus = id => tasks.filter(t => t.status === id);
 
   const deleteTask = async (taskId) => {
     if (!confirm('Delete this task?')) return;
@@ -613,41 +697,81 @@ function KanbanView({ tasks, members, projectId, onRefresh }) {
     onRefresh();
   };
 
-  const moveTask = async (task, newStatus) => {
-    await apiFetch(`/api/tasks/${task.id}`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
+  // ── drag handlers ──
+  const onDragStart = (e, taskId) => {
+    setDragId(taskId);
+    e.dataTransfer.effectAllowed = 'move';
+    // small delay so the ghost looks normal
+    setTimeout(() => {
+      const el = document.getElementById(`task-${taskId}`);
+      if (el) el.classList.add('dragging');
+    }, 0);
+  };
+  const onDragEnd = () => {
+    if (dragId) {
+      const el = document.getElementById(`task-${dragId}`);
+      if (el) el.classList.remove('dragging');
+    }
+    setDragId(null);
+    setOverCol(null);
+  };
+  const onDragOver = (e, colId) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setOverCol(colId);
+  };
+  const onDrop = async (e, colId) => {
+    e.preventDefault();
+    setOverCol(null);
+    if (!dragId) return;
+    const task = tasks.find(t => t.id === dragId);
+    if (!task || task.status === colId) return;
+    // optimistic: let onRefresh re-fetch
+    await apiFetch(`/api/tasks/${dragId}`, { method: 'PATCH', body: JSON.stringify({ status: colId }) });
     onRefresh();
   };
 
   return (
-    <div className="kanban">
-      {STATUSES.map(col => (
-        <div key={col.id} className="kanban-col">
-          <div className="kanban-col-header">
-            <div className="kanban-col-title">
-              <div className={`col-dot ${col.dotClass}`} />
-              {col.label}
+    <div className="board-wrap">
+      <div className="board-table">
+        {STATUSES.map(col => (
+          <div key={col.id}
+            className={`board-col${overCol === col.id ? ' drag-over' : ''}`}
+            onDragOver={e => onDragOver(e, col.id)}
+            onDragLeave={() => setOverCol(null)}
+            onDrop={e => onDrop(e, col.id)}
+          >
+            <div className="board-col-header">
+              <div className="board-col-title">
+                <div className={`col-dot ${col.dotClass}`} />
+                {col.label}
+              </div>
+              <span className="col-count">{byStatus(col.id).length}</span>
             </div>
-            <span className="col-count">{byStatus(col.id).length}</span>
+
+            <div className="board-tasks">
+              {byStatus(col.id).map(task => (
+                <TaskCard key={task.id} task={task}
+                  onDragStart={onDragStart}
+                  onDragEnd={onDragEnd}
+                  onClick={() => setViewTask(task)}
+                  onEdit={() => setEditTask(task)}
+                  onDelete={() => deleteTask(task.id)}
+                />
+              ))}
+              {byStatus(col.id).length === 0 && (
+                <div style={{fontSize:11,color:'var(--text3)',textAlign:'center',padding:'20px 0',pointerEvents:'none'}}>
+                  Drop tasks here
+                </div>
+              )}
+            </div>
+
+            <button className="board-add-btn" onClick={() => setAddingTo(col.id)}>
+              <Icon name="plus" size={12} /> Add task
+            </button>
           </div>
-          <div className="kanban-tasks">
-            {byStatus(col.id).map(task => (
-              <TaskCard key={task.id} task={task}
-                onClick={() => setViewTask(task)}
-                onEdit={() => setEditTask(task)}
-                onDelete={() => deleteTask(task.id)}
-                onMove={(s) => moveTask(task, s)}
-                statuses={STATUSES}
-              />
-            ))}
-            {byStatus(col.id).length === 0 && (
-              <div style={{fontSize:11,color:'var(--text3)',textAlign:'center',padding:'16px 0'}}>No tasks</div>
-            )}
-          </div>
-          <button className="kanban-add-btn" onClick={() => setAddingTo(col.id)}>
-            <Icon name="plus" size={12} /> Add task
-          </button>
-        </div>
-      ))}
+        ))}
+      </div>
 
       {addingTo && (
         <Modal title="New Task" onClose={() => setAddingTo(null)}>
@@ -670,7 +794,9 @@ function KanbanView({ tasks, members, projectId, onRefresh }) {
         <Modal title="Task Detail" onClose={() => setViewTask(null)}>
           <div className="task-detail">
             <div className="task-detail-title">{viewTask.title}</div>
-            {viewTask.description && <div className="task-detail-desc">{viewTask.description}</div>}
+            {viewTask.description && (
+              <div className="md" dangerouslySetInnerHTML={{ __html: renderMd(viewTask.description) }} />
+            )}
             <div className="detail-row">
               <div className="detail-item">
                 <span className="detail-label">Status</span>
@@ -710,17 +836,28 @@ function KanbanView({ tasks, members, projectId, onRefresh }) {
   );
 }
 
-function TaskCard({ task, onClick, onEdit, onDelete, onMove, statuses }) {
+function TaskCard({ task, onDragStart, onDragEnd, onClick, onEdit, onDelete }) {
   const [menu, setMenu] = useState(false);
   const today = new Date().toISOString().slice(0,10);
   const overdue = task.due_date && task.due_date.slice(0,10) < today && task.status !== 'done';
+
   return (
-    <div className="task-card" style={{position:'relative'}}>
+    <div id={`task-${task.id}`}
+      className="task-card"
+      draggable
+      onDragStart={e => onDragStart(e, task.id)}
+      onDragEnd={onDragEnd}
+    >
+      {/* title — click to view */}
       <div className="task-title" onClick={onClick}>{task.title}</div>
+
+      {/* markdown description preview */}
+      {task.description && <MdPreview text={task.description} />}
+
       <div className="task-meta">
         <span className={`priority-badge priority-${task.priority}`}>{task.priority}</span>
         {task.due_date && (
-          <span className={`task-due ${overdue?'overdue':''}`}>{task.due_date.slice(0,10)}</span>
+          <span className={`task-due ${overdue ? 'overdue' : ''}`}>{task.due_date.slice(0,10)}</span>
         )}
         {task.assignee_name && (
           <div className="task-assignee" title={task.assignee_name}>
@@ -728,29 +865,29 @@ function TaskCard({ task, onClick, onEdit, onDelete, onMove, statuses }) {
           </div>
         )}
         <div style={{marginLeft:'auto',position:'relative'}}>
-          <button className="btn btn-ghost btn-sm" style={{padding:'2px 6px'}} onClick={()=>setMenu(!menu)}>⋮</button>
+          <button className="btn btn-ghost btn-sm" style={{padding:'2px 6px'}}
+            onClick={e => { e.stopPropagation(); setMenu(!menu); }}>⋮</button>
           {menu && (
-            <div style={{position:'absolute',right:0,top:'100%',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:8,zIndex:10,minWidth:140,boxShadow:'var(--shadow)'}}>
+            <div style={{position:'absolute',right:0,top:'100%',background:'var(--bg2)',
+              border:'1px solid var(--border)',borderRadius:8,zIndex:10,minWidth:120,
+              boxShadow:'var(--shadow)'}}>
               <div style={{padding:'4px'}}>
-                {statuses.filter(s=>s.id!==task.status).map(s=>(
-                  <div key={s.id} style={{padding:'7px 12px',fontSize:12,cursor:'pointer',borderRadius:6,color:'var(--text2)'}}
-                    onClick={()=>{onMove(s.id);setMenu(false)}}
-                    onMouseEnter={e=>e.target.style.background='var(--bg3)'}
-                    onMouseLeave={e=>e.target.style.background='transparent'}>
-                    → {s.label}
-                  </div>
-                ))}
-                <hr style={{border:'none',borderTop:'1px solid var(--border)',margin:'4px 0'}}/>
                 <div style={{padding:'7px 12px',fontSize:12,cursor:'pointer',borderRadius:6,color:'var(--text2)'}}
-                  onClick={()=>{onEdit();setMenu(false)}}
-                  onMouseEnter={e=>e.target.style.background='var(--bg3)'}
-                  onMouseLeave={e=>e.target.style.background='transparent'}>
+                  onClick={e=>{e.stopPropagation();onClick();setMenu(false);}}
+                  onMouseEnter={e=>e.currentTarget.style.background='var(--bg3)'}
+                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                  👁 View
+                </div>
+                <div style={{padding:'7px 12px',fontSize:12,cursor:'pointer',borderRadius:6,color:'var(--text2)'}}
+                  onClick={e=>{e.stopPropagation();onEdit();setMenu(false);}}
+                  onMouseEnter={e=>e.currentTarget.style.background='var(--bg3)'}
+                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                   ✎ Edit
                 </div>
                 <div style={{padding:'7px 12px',fontSize:12,cursor:'pointer',borderRadius:6,color:'var(--red)'}}
-                  onClick={()=>{onDelete();setMenu(false)}}
-                  onMouseEnter={e=>e.target.style.background='rgba(255,94,122,.08)'}
-                  onMouseLeave={e=>e.target.style.background='transparent'}>
+                  onClick={e=>{e.stopPropagation();onDelete();setMenu(false);}}
+                  onMouseEnter={e=>e.currentTarget.style.background='rgba(255,94,122,.08)'}
+                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                   ✕ Delete
                 </div>
               </div>
@@ -927,7 +1064,7 @@ function ProjectView({ project, user, onBack }) {
         </button>
       </div>
 
-      <div className="content">
+      <div className={`content${view === 'kanban' ? ' content-board' : ''}`}>
         {loading ? <div className="loading">Loading tasks…</div> : (
           view === 'kanban'
             ? <KanbanView tasks={tasks} members={members} projectId={project.id} onRefresh={load} />
