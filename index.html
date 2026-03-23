@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TRACKER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0a0a0f;
+  --bg2:       #111118;
+  --bg3:       #18181f;
+  --bg4:       #1e1e28;
+  --border:    #2a2a38;
+  --border2:   #33334a;
+  --accent:    #7c6cff;
+  --accent2:   #a897ff;
+  --accent3:   #5b4fe8;
+  --green:     #22d3a0;
+  --yellow:    #f5c842;
+  --red:       #ff5e7a;
+  --orange:    #ff8c42;
+  --text:      #e8e8f0;
+  --text2:     #9898b8;
+  --text3:     #5a5a7a;
+  --radius:    10px;
+  --shadow:    0 4px 24px rgba(0,0,0,0.5);
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── SCROLLBAR ─────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ─── AUTH ──────────────────────────────────────────────────────── */
+.auth-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(124,108,255,0.12) 0%, transparent 70%),
+              var(--bg);
+}
+.auth-card {
+  width: 420px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: var(--shadow);
+}
+.auth-logo {
+  font-family: 'Space Mono', monospace;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  color: var(--accent2);
+  margin-bottom: 6px;
+}
+.auth-logo span { color: var(--text3); }
+.auth-sub { color: var(--text2); font-size: 13px; margin-bottom: 32px; }
+.auth-tab-row { display: flex; gap: 4px; margin-bottom: 28px; }
+.auth-tab {
+  flex: 1; padding: 8px; background: transparent; border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text2); font-size: 13px; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; transition: all .15s;
+}
+.auth-tab.active { background: var(--accent3); border-color: var(--accent); color: #fff; }
+
+/* ─── INPUTS ────────────────────────────────────────────────────── */
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; letter-spacing: .5px; text-transform: uppercase; }
+.field input, .field select, .field textarea {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px; color: var(--text);
+  font-size: 14px; font-family: 'DM Sans', sans-serif;
+  outline: none; transition: border-color .15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+.field textarea { resize: vertical; min-height: 80px; }
+.field select option { background: var(--bg3); }
+
+/* ─── BUTTONS ───────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px; border-radius: 8px; font-size: 13px;
+  font-family: 'DM Sans', sans-serif; font-weight: 500;
+  cursor: pointer; border: none; transition: all .15s; white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+.btn-ghost:hover { border-color: var(--border2); color: var(--text); }
+.btn-danger { background: rgba(255,94,122,0.12); color: var(--red); border: 1px solid rgba(255,94,122,0.25); }
+.btn-danger:hover { background: rgba(255,94,122,0.22); }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-full { width: 100%; justify-content: center; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ─── LAYOUT ────────────────────────────────────────────────────── */
+.app { display: flex; height: 100vh; overflow: hidden; }
+
+/* Sidebar */
+.sidebar {
+  width: 220px; min-width: 220px; background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 20px 12px;
+}
+.sidebar-logo {
+  font-family: 'Space Mono', monospace; font-size: 18px; font-weight: 700;
+  color: var(--accent2); letter-spacing: -1px; padding: 4px 8px 20px;
+}
+.sidebar-logo span { color: var(--text3); }
+.sidebar-section { font-size: 10px; color: var(--text3); text-transform: uppercase;
+  letter-spacing: 1px; padding: 12px 8px 6px; }
+.nav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 8px; font-size: 13px; cursor: pointer;
+  color: var(--text2); transition: all .12s; user-select: none;
+}
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active { background: rgba(124,108,255,0.14); color: var(--accent2); }
+.nav-item .icon { width: 16px; text-align: center; }
+.sidebar-spacer { flex: 1; }
+.sidebar-user {
+  padding: 12px 10px; border-radius: 8px; background: var(--bg3);
+  border: 1px solid var(--border);
+}
+.sidebar-user-name { font-size: 13px; font-weight: 500; }
+.sidebar-user-role {
+  font-size: 11px; color: var(--text3); margin-top: 2px;
+  font-family: 'Space Mono', monospace;
+}
+
+/* Main */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar {
+  height: 56px; min-height: 56px; background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 24px;
+}
+.topbar-title { font-size: 15px; font-weight: 600; }
+.topbar-spacer { flex: 1; }
+.view-toggle { display: flex; gap: 4px; }
+.view-btn {
+  padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;
+  border: 1px solid var(--border); background: transparent; color: var(--text2);
+  font-family: 'DM Sans', sans-serif; transition: all .12s;
+}
+.view-btn.active { background: var(--bg3); color: var(--text); border-color: var(--border2); }
+
+.content { flex: 1; overflow: auto; padding: 24px; }
+
+/* ─── PROJECTS LIST ─────────────────────────────────────────────── */
+.projects-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;
+}
+.project-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px; cursor: pointer; transition: all .15s;
+}
+.project-card:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: var(--shadow); }
+.project-name { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.project-desc { font-size: 12px; color: var(--text2); margin-bottom: 16px; min-height: 32px; }
+.project-meta { display: flex; gap: 12px; font-size: 11px; color: var(--text3); }
+.project-add-card {
+  background: transparent; border: 2px dashed var(--border);
+  border-radius: var(--radius); padding: 20px;
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; cursor: pointer; color: var(--text3); font-size: 13px;
+  transition: all .15s; min-height: 120px;
+}
+.project-add-card:hover { border-color: var(--accent); color: var(--accent2); }
+
+/* ─── KANBAN ────────────────────────────────────────────────────── */
+.kanban { display: flex; gap: 16px; height: 100%; align-items: flex-start; }
+.kanban-col {
+  min-width: 280px; width: 280px; background: var(--bg2);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  display: flex; flex-direction: column; max-height: calc(100vh - 130px);
+}
+.kanban-col-header {
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.kanban-col-title {
+  display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;
+}
+.col-dot { width: 8px; height: 8px; border-radius: 50%; }
+.col-count {
+  font-size: 11px; color: var(--text3); background: var(--bg3);
+  padding: 2px 7px; border-radius: 20px; font-family: 'Space Mono', monospace;
+}
+.kanban-tasks { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.kanban-add-btn {
+  margin: 8px 12px 12px; padding: 8px; background: transparent;
+  border: 1px dashed var(--border); border-radius: 7px;
+  color: var(--text3); font-size: 12px; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; transition: all .12s;
+  font-family: 'DM Sans', sans-serif;
+}
+.kanban-add-btn:hover { border-color: var(--accent); color: var(--accent2); }
+
+/* Task card */
+.task-card {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px; cursor: pointer;
+  transition: all .12s;
+}
+.task-card:hover { border-color: var(--border2); box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
+.task-title { font-size: 13px; font-weight: 500; line-height: 1.4; margin-bottom: 8px; }
+.task-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.priority-badge {
+  font-size: 10px; padding: 2px 7px; border-radius: 20px;
+  font-family: 'Space Mono', monospace; font-weight: 400;
+}
+.priority-low    { background: rgba(34,211,160,.1); color: var(--green); }
+.priority-medium { background: rgba(245,200,66,.1); color: var(--yellow); }
+.priority-high   { background: rgba(255,140,66,.1); color: var(--orange); }
+.priority-urgent { background: rgba(255,94,122,.1); color: var(--red); }
+.task-due { font-size: 10px; color: var(--text3); font-family: 'Space Mono', monospace; }
+.task-due.overdue { color: var(--red); }
+.task-assignee {
+  margin-left: auto; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent3); display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 600; color: #fff;
+}
+
+/* ─── TIMELINE ──────────────────────────────────────────────────── */
+.timeline-wrap { overflow: auto; }
+.timeline-header {
+  display: flex; align-items: center; padding: 0 0 12px;
+  font-size: 11px; color: var(--text3); font-family: 'Space Mono', monospace;
+  position: sticky; top: 0; background: var(--bg); z-index: 2; gap: 0;
+}
+.tl-label-col { width: 220px; min-width: 220px; padding: 8px 0; }
+.tl-months { display: flex; flex: 1; }
+.tl-month {
+  text-align: center; border-left: 1px solid var(--border);
+  font-size: 10px; color: var(--text3); padding: 8px 0;
+  font-family: 'Space Mono', monospace;
+}
+.tl-row { display: flex; align-items: center; border-bottom: 1px solid var(--border); }
+.tl-row:hover { background: rgba(255,255,255,0.02); }
+.tl-task-label {
+  width: 220px; min-width: 220px; padding: 10px 12px;
+  font-size: 12px; display: flex; align-items: center; gap: 8px;
+}
+.tl-grid { flex: 1; position: relative; height: 40px; }
+.tl-bar {
+  position: absolute; height: 22px; top: 50%; transform: translateY(-50%);
+  border-radius: 4px; display: flex; align-items: center;
+  padding: 0 8px; font-size: 10px; color: #fff; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; cursor: pointer;
+  transition: filter .12s;
+}
+.tl-bar:hover { filter: brightness(1.15); }
+.tl-today {
+  position: absolute; top: 0; bottom: 0; width: 1px;
+  background: var(--red); opacity: 0.6; z-index: 1;
+}
+
+/* ─── MODAL ─────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; padding: 20px;
+}
+.modal {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 14px; width: 500px; max-width: 100%;
+  max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow);
+  padding: 28px;
+}
+.modal-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+/* ─── TASK DETAIL ────────────────────────────────────────────────── */
+.task-detail { display: flex; flex-direction: column; gap: 14px; }
+.task-detail-title { font-size: 18px; font-weight: 600; }
+.task-detail-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.detail-row { display: flex; gap: 24px; flex-wrap: wrap; }
+.detail-item { display: flex; flex-direction: column; gap: 4px; }
+.detail-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; }
+.detail-val { font-size: 13px; }
+
+/* ─── ADMIN ──────────────────────────────────────────────────────── */
+.admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 28px; }
+.stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.stat-num { font-size: 28px; font-family: 'Space Mono', monospace; font-weight: 700; color: var(--accent2); }
+.stat-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+.table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table th { text-align: left; padding: 10px 14px; font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border); }
+.table td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.table tr:hover td { background: rgba(255,255,255,0.02); }
+
+.role-badge {
+  font-size: 10px; padding: 2px 8px; border-radius: 20px;
+  font-family: 'Space Mono', monospace;
+}
+.role-admin  { background: rgba(124,108,255,.15); color: var(--accent2); }
+.role-member { background: rgba(255,255,255,.06); color: var(--text2); }
+
+/* ─── EMPTY ──────────────────────────────────────────────────────── */
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 48px; color: var(--text3); text-align: center; }
+.empty-icon { font-size: 36px; opacity: .5; }
+.empty-text { font-size: 14px; }
+
+/* ─── MISC ───────────────────────────────────────────────────────── */
+.chip {
+  font-size: 11px; padding: 2px 8px; border-radius: 20px;
+  background: var(--bg4); color: var(--text2); border: 1px solid var(--border);
+  font-family: 'Space Mono', monospace;
+}
+.err-msg { color: var(--red); font-size: 12px; margin-top: 8px; }
+.loading { color: var(--text3); font-size: 13px; padding: 24px; }
+.tag-backlog    { color: #7ca4ff; }
+.tag-todo       { color: var(--yellow); }
+.tag-in_progress{ color: var(--orange); }
+.tag-done       { color: var(--green); }
+.dot-backlog    { background: #7ca4ff; }
+.dot-todo       { background: var(--yellow); }
+.dot-in_progress{ background: var(--orange); }
+.dot-done       { background: var(--green); }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.section-title  { font-size: 17px; font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+// ─── CONFIG ────────────────────────────────────────────────────────────────
+// Set your deployed Cloudflare Worker URL here:
+const API = (window.TRACKER_API || 'https://tracker-worker.YOUR-SUBDOMAIN.workers.dev');
+
+// ─── API HELPERS ────────────────────────────────────────────────────────────
+function getToken() { return localStorage.getItem('tracker_token'); }
+function setToken(t) { localStorage.setItem('tracker_token', t); }
+function clearToken() { localStorage.removeItem('tracker_token'); }
+
+async function apiFetch(path, opts = {}) {
+  const token = getToken();
+  const res = await fetch(`${API}${path}`, {
+    ...opts,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(opts.headers || {}),
+    },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+// ─── STATUS CONFIG ──────────────────────────────────────────────────────────
+const STATUSES = [
+  { id: 'backlog',     label: 'Backlog',     dotClass: 'dot-backlog' },
+  { id: 'todo',        label: 'To Do',       dotClass: 'dot-todo' },
+  { id: 'in_progress', label: 'In Progress', dotClass: 'dot-in_progress' },
+  { id: 'done',        label: 'Done',        dotClass: 'dot-done' },
+];
+
+const STATUS_COLORS = {
+  backlog: '#7ca4ff', todo: '#f5c842', in_progress: '#ff8c42', done: '#22d3a0'
+};
+
+const PRIORITIES = ['low','medium','high','urgent'];
+
+// ─── ICONS (inline SVG) ─────────────────────────────────────────────────────
+const Icon = ({ name, size=14 }) => {
+  const icons = {
+    grid:     <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></>,
+    list:     <><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></>,
+    calendar: <><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>,
+    plus:     <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
+    user:     <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
+    settings: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></>,
+    logout:   <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></>,
+    folder:   <><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></>,
+    trash:    <><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></>,
+    edit:     <><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>,
+    x:        <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
+    check:    <><polyline points="20 6 9 17 4 12"/></>,
+    back:     <><polyline points="15 18 9 12 15 6"/></>,
+    shield:   <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></>,
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {icons[name]}
+    </svg>
+  );
+};
+
+// ─── AUTH SCREEN ────────────────────────────────────────────────────────────
+function AuthScreen({ onLogin }) {
+  const [tab, setTab] = useState('login');
+  const [form, setForm] = useState({ username: '', email: '', password: '' });
+  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const submit = async () => {
+    setErr(''); setLoading(true);
+    try {
+      const path = tab === 'login' ? '/api/auth/login' : '/api/auth/register';
+      const body = tab === 'login'
+        ? { username: form.username, password: form.password }
+        : { username: form.username, email: form.email, password: form.password };
+      const data = await apiFetch(path, { method: 'POST', body: JSON.stringify(body) });
+      setToken(data.token);
+      onLogin(data.user);
+    } catch (e) { setErr(e.message); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div className="auth-wrap">
+      <div className="auth-card">
+        <div className="auth-logo">TRACKER<span>.</span></div>
+        <div className="auth-sub">Project management for focused teams</div>
+        <div className="auth-tab-row">
+          <button className={`auth-tab ${tab==='login'?'active':''}`} onClick={()=>setTab('login')}>Sign In</button>
+          <button className={`auth-tab ${tab==='register'?'active':''}`} onClick={()=>setTab('register')}>Register</button>
+        </div>
+        <div className="field">
+          <label>Username {tab==='login' && '/ Email'}</label>
+          <input placeholder={tab==='login'?'username or email':'username'}
+            value={form.username} onChange={e=>setForm({...form,username:e.target.value})}
+            onKeyDown={e=>e.key==='Enter'&&submit()} />
+        </div>
+        {tab==='register' && (
+          <div className="field"><label>Email</label>
+            <input type="email" placeholder="you@example.com"
+              value={form.email} onChange={e=>setForm({...form,email:e.target.value})} />
+          </div>
+        )}
+        <div className="field"><label>Password</label>
+          <input type="password" placeholder="••••••••"
+            value={form.password} onChange={e=>setForm({...form,password:e.target.value})}
+            onKeyDown={e=>e.key==='Enter'&&submit()} />
+        </div>
+        {err && <div className="err-msg">{err}</div>}
+        <button className="btn btn-primary btn-full" style={{marginTop:16}} onClick={submit} disabled={loading}>
+          {loading ? 'Please wait…' : tab==='login'?'Sign In':'Create Account'}
+        </button>
+        {tab==='register' && (
+          <p style={{fontSize:11,color:'var(--text3)',marginTop:12,textAlign:'center'}}>
+            First registered user becomes admin
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── MODAL ──────────────────────────────────────────────────────────────────
+function Modal({ title, onClose, children }) {
+  return (
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
+          <div className="modal-title" style={{margin:0}}>{title}</div>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} style={{padding:'4px 8px'}}>
+            <Icon name="x" />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─── TASK FORM ───────────────────────────────────────────────────────────────
+function TaskForm({ projectId, task, members, onSave, onClose }) {
+  const [form, setForm] = useState({
+    title: task?.title||'',
+    description: task?.description||'',
+    status: task?.status||'todo',
+    priority: task?.priority||'medium',
+    assignee_id: task?.assignee_id||'',
+    due_date: task?.due_date?.slice(0,10)||'',
+    start_date: task?.start_date?.slice(0,10)||'',
+  });
+  const [err, setErr] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!form.title.trim()) { setErr('Title required'); return; }
+    setSaving(true); setErr('');
+    try {
+      const body = { ...form, assignee_id: form.assignee_id||null, due_date: form.due_date||null, start_date: form.start_date||null };
+      let result;
+      if (task) {
+        result = await apiFetch(`/api/tasks/${task.id}`, { method: 'PATCH', body: JSON.stringify(body) });
+      } else {
+        result = await apiFetch(`/api/projects/${projectId}/tasks`, { method: 'POST', body: JSON.stringify(body) });
+      }
+      onSave(result.task);
+    } catch(e) { setErr(e.message); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <>
+      <div className="field"><label>Title *</label>
+        <input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} placeholder="Task title" />
+      </div>
+      <div className="field"><label>Description</label>
+        <textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Details…" />
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+        <div className="field"><label>Status</label>
+          <select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}>
+            {STATUSES.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+        </div>
+        <div className="field"><label>Priority</label>
+          <select value={form.priority} onChange={e=>setForm({...form,priority:e.target.value})}>
+            {PRIORITIES.map(p=><option key={p} value={p}>{p.charAt(0).toUpperCase()+p.slice(1)}</option>)}
+          </select>
+        </div>
+      </div>
+      <div className="field"><label>Assignee</label>
+        <select value={form.assignee_id} onChange={e=>setForm({...form,assignee_id:e.target.value})}>
+          <option value="">Unassigned</option>
+          {members.map(m=><option key={m.id} value={m.id}>{m.username}</option>)}
+        </select>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+        <div className="field"><label>Start Date</label>
+          <input type="date" value={form.start_date} onChange={e=>setForm({...form,start_date:e.target.value})} />
+        </div>
+        <div className="field"><label>Due Date</label>
+          <input type="date" value={form.due_date} onChange={e=>setForm({...form,due_date:e.target.value})} />
+        </div>
+      </div>
+      {err && <div className="err-msg">{err}</div>}
+      <div className="modal-actions">
+        <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+        <button className="btn btn-primary" onClick={save} disabled={saving}>
+          {saving ? 'Saving…' : task ? 'Update Task' : 'Create Task'}
+        </button>
+      </div>
+    </>
+  );
+}
+
+// ─── KANBAN VIEW ─────────────────────────────────────────────────────────────
+function KanbanView({ tasks, members, projectId, onRefresh }) {
+  const [addingTo, setAddingTo] = useState(null);
+  const [editTask, setEditTask] = useState(null);
+  const [viewTask, setViewTask] = useState(null);
+
+  const byStatus = id => tasks.filter(t=>t.status===id);
+
+  const deleteTask = async (taskId) => {
+    if (!confirm('Delete this task?')) return;
+    await apiFetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
+    onRefresh();
+  };
+
+  const moveTask = async (task, newStatus) => {
+    await apiFetch(`/api/tasks/${task.id}`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
+    onRefresh();
+  };
+
+  return (
+    <div className="kanban">
+      {STATUSES.map(col => (
+        <div key={col.id} className="kanban-col">
+          <div className="kanban-col-header">
+            <div className="kanban-col-title">
+              <div className={`col-dot ${col.dotClass}`} />
+              {col.label}
+            </div>
+            <span className="col-count">{byStatus(col.id).length}</span>
+          </div>
+          <div className="kanban-tasks">
+            {byStatus(col.id).map(task => (
+              <TaskCard key={task.id} task={task}
+                onClick={() => setViewTask(task)}
+                onEdit={() => setEditTask(task)}
+                onDelete={() => deleteTask(task.id)}
+                onMove={(s) => moveTask(task, s)}
+                statuses={STATUSES}
+              />
+            ))}
+            {byStatus(col.id).length === 0 && (
+              <div style={{fontSize:11,color:'var(--text3)',textAlign:'center',padding:'16px 0'}}>No tasks</div>
+            )}
+          </div>
+          <button className="kanban-add-btn" onClick={() => setAddingTo(col.id)}>
+            <Icon name="plus" size={12} /> Add task
+          </button>
+        </div>
+      ))}
+
+      {addingTo && (
+        <Modal title="New Task" onClose={() => setAddingTo(null)}>
+          <TaskForm projectId={projectId} members={members}
+            task={{ status: addingTo }}
+            onSave={() => { setAddingTo(null); onRefresh(); }}
+            onClose={() => setAddingTo(null)} />
+        </Modal>
+      )}
+
+      {editTask && (
+        <Modal title="Edit Task" onClose={() => setEditTask(null)}>
+          <TaskForm projectId={projectId} members={members} task={editTask}
+            onSave={() => { setEditTask(null); onRefresh(); }}
+            onClose={() => setEditTask(null)} />
+        </Modal>
+      )}
+
+      {viewTask && (
+        <Modal title="Task Detail" onClose={() => setViewTask(null)}>
+          <div className="task-detail">
+            <div className="task-detail-title">{viewTask.title}</div>
+            {viewTask.description && <div className="task-detail-desc">{viewTask.description}</div>}
+            <div className="detail-row">
+              <div className="detail-item">
+                <span className="detail-label">Status</span>
+                <span className={`chip tag-${viewTask.status}`}>{viewTask.status.replace('_',' ')}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Priority</span>
+                <span className={`priority-badge priority-${viewTask.priority}`}>{viewTask.priority}</span>
+              </div>
+              {viewTask.assignee_name && (
+                <div className="detail-item">
+                  <span className="detail-label">Assignee</span>
+                  <span className="detail-val">{viewTask.assignee_name}</span>
+                </div>
+              )}
+              {viewTask.due_date && (
+                <div className="detail-item">
+                  <span className="detail-label">Due</span>
+                  <span className="detail-val">{viewTask.due_date.slice(0,10)}</span>
+                </div>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-ghost btn-sm" onClick={() => { setViewTask(null); setEditTask(viewTask); }}>
+                <Icon name="edit" size={12}/> Edit
+              </button>
+              <button className="btn btn-danger btn-sm" onClick={() => { deleteTask(viewTask.id); setViewTask(null); }}>
+                <Icon name="trash" size={12}/> Delete
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function TaskCard({ task, onClick, onEdit, onDelete, onMove, statuses }) {
+  const [menu, setMenu] = useState(false);
+  const today = new Date().toISOString().slice(0,10);
+  const overdue = task.due_date && task.due_date.slice(0,10) < today && task.status !== 'done';
+  return (
+    <div className="task-card" style={{position:'relative'}}>
+      <div className="task-title" onClick={onClick}>{task.title}</div>
+      <div className="task-meta">
+        <span className={`priority-badge priority-${task.priority}`}>{task.priority}</span>
+        {task.due_date && (
+          <span className={`task-due ${overdue?'overdue':''}`}>{task.due_date.slice(0,10)}</span>
+        )}
+        {task.assignee_name && (
+          <div className="task-assignee" title={task.assignee_name}>
+            {task.assignee_name.slice(0,2).toUpperCase()}
+          </div>
+        )}
+        <div style={{marginLeft:'auto',position:'relative'}}>
+          <button className="btn btn-ghost btn-sm" style={{padding:'2px 6px'}} onClick={()=>setMenu(!menu)}>⋮</button>
+          {menu && (
+            <div style={{position:'absolute',right:0,top:'100%',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:8,zIndex:10,minWidth:140,boxShadow:'var(--shadow)'}}>
+              <div style={{padding:'4px'}}>
+                {statuses.filter(s=>s.id!==task.status).map(s=>(
+                  <div key={s.id} style={{padding:'7px 12px',fontSize:12,cursor:'pointer',borderRadius:6,color:'var(--text2)'}}
+                    onClick={()=>{onMove(s.id);setMenu(false)}}
+                    onMouseEnter={e=>e.target.style.background='var(--bg3)'}
+                    onMouseLeave={e=>e.target.style.background='transparent'}>
+                    → {s.label}
+                  </div>
+                ))}
+                <hr style={{border:'none',borderTop:'1px solid var(--border)',margin:'4px 0'}}/>
+                <div style={{padding:'7px 12px',fontSize:12,cursor:'pointer',borderRadius:6,color:'var(--text2)'}}
+                  onClick={()=>{onEdit();setMenu(false)}}
+                  onMouseEnter={e=>e.target.style.background='var(--bg3)'}
+                  onMouseLeave={e=>e.target.style.background='transparent'}>
+                  ✎ Edit
+                </div>
+                <div style={{padding:'7px 12px',fontSize:12,cursor:'pointer',borderRadius:6,color:'var(--red)'}}
+                  onClick={()=>{onDelete();setMenu(false)}}
+                  onMouseEnter={e=>e.target.style.background='rgba(255,94,122,.08)'}
+                  onMouseLeave={e=>e.target.style.background='transparent'}>
+                  ✕ Delete
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── TIMELINE VIEW ───────────────────────────────────────────────────────────
+function TimelineView({ tasks }) {
+  const today = new Date();
+  const startOfRange = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const endOfRange   = new Date(today.getFullYear(), today.getMonth() + 4, 0);
+  const totalDays    = Math.ceil((endOfRange - startOfRange) / 86400000);
+
+  const months = [];
+  let cur = new Date(startOfRange);
+  while (cur <= endOfRange) {
+    months.push({ year: cur.getFullYear(), month: cur.getMonth() });
+    cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+  }
+
+  function dayOffset(d) {
+    const date = new Date(d);
+    return Math.ceil((date - startOfRange) / 86400000);
+  }
+
+  function pct(d) { return (dayOffset(d) / totalDays * 100).toFixed(2) + '%'; }
+  function width(s, e) {
+    const days = Math.max(1, Math.ceil((new Date(e) - new Date(s)) / 86400000) + 1);
+    return (days / totalDays * 100).toFixed(2) + '%';
+  }
+
+  const daysInMonth = (y, m) => new Date(y, m+1, 0).getDate();
+  const todayPct = (dayOffset(today) / totalDays * 100).toFixed(2) + '%';
+
+  const tasksWithDates = tasks.filter(t => t.start_date || t.due_date);
+
+  return (
+    <div className="timeline-wrap">
+      {/* Header */}
+      <div className="timeline-header">
+        <div className="tl-label-col">Tasks</div>
+        <div className="tl-months">
+          {months.map(({ year, month }) => {
+            const days = daysInMonth(year, month);
+            const widthPct = (days / totalDays * 100).toFixed(2) + '%';
+            return (
+              <div key={`${year}-${month}`} className="tl-month" style={{ width: widthPct }}>
+                {new Date(year, month, 1).toLocaleString('default', { month: 'short' })} {year}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {tasksWithDates.length === 0 && (
+        <div className="empty">
+          <div className="empty-icon">📅</div>
+          <div className="empty-text">No tasks with dates yet.<br/>Set start/due dates to see timeline.</div>
+        </div>
+      )}
+
+      {tasksWithDates.map(task => {
+        const start = task.start_date || task.due_date;
+        const end   = task.due_date   || task.start_date;
+        const left  = pct(start);
+        const w     = width(start, end);
+        const color = STATUS_COLORS[task.status];
+        return (
+          <div key={task.id} className="tl-row">
+            <div className="tl-task-label">
+              <span className={`priority-badge priority-${task.priority}`}>{task.priority[0].toUpperCase()}</span>
+              <span style={{fontSize:12,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{task.title}</span>
+            </div>
+            <div className="tl-grid">
+              <div className="tl-today" style={{ left: todayPct }} title="Today" />
+              <div className="tl-bar"
+                style={{ left, width: w, background: color, opacity: task.status==='done'?0.5:0.85 }}
+                title={`${task.title} (${start?.slice(0,10)} → ${end?.slice(0,10)})`}>
+                {task.title}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── PROJECT VIEW ────────────────────────────────────────────────────────────
+function ProjectView({ project, user, onBack }) {
+  const [view, setView] = useState('kanban');
+  const [tasks, setTasks] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddTask, setShowAddTask] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [t, m] = await Promise.all([
+        apiFetch(`/api/projects/${project.id}/tasks`),
+        apiFetch(`/api/projects/${project.id}/members`),
+      ]);
+      setTasks(t.tasks);
+      setMembers(m.members);
+    } catch(e) {}
+    setLoading(false);
+  }, [project.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div className="topbar">
+        <button className="btn btn-ghost btn-sm" onClick={onBack}><Icon name="back" size={12}/></button>
+        <div className="topbar-title">{project.name}</div>
+        <div className="topbar-spacer" />
+        <div className="view-toggle">
+          <button className={`view-btn ${view==='kanban'?'active':''}`} onClick={()=>setView('kanban')}>
+            Kanban
+          </button>
+          <button className={`view-btn ${view==='timeline'?'active':''}`} onClick={()=>setView('timeline')}>
+            Timeline
+          </button>
+        </div>
+        <button className="btn btn-primary btn-sm" onClick={()=>setShowAddTask(true)}>
+          <Icon name="plus" size={12}/> New Task
+        </button>
+      </div>
+
+      <div className="content">
+        {loading ? <div className="loading">Loading tasks…</div> : (
+          view === 'kanban'
+            ? <KanbanView tasks={tasks} members={members} projectId={project.id} onRefresh={load} />
+            : <TimelineView tasks={tasks} />
+        )}
+      </div>
+
+      {showAddTask && (
+        <Modal title="New Task" onClose={()=>setShowAddTask(false)}>
+          <TaskForm projectId={project.id} members={members}
+            onSave={()=>{ setShowAddTask(false); load(); }}
+            onClose={()=>setShowAddTask(false)} />
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ─── PROJECTS SCREEN ─────────────────────────────────────────────────────────
+function ProjectsScreen({ user, onSelect }) {
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [showNew, setShowNew]   = useState(false);
+  const [form, setForm]         = useState({ name:'', description:'' });
+  const [err, setErr]           = useState('');
+
+  const load = async () => {
+    setLoading(true);
+    try { const d = await apiFetch('/api/projects'); setProjects(d.projects); } catch {}
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const createProject = async () => {
+    if (!form.name.trim()) { setErr('Name required'); return; }
+    try {
+      await apiFetch('/api/projects', { method: 'POST', body: JSON.stringify(form) });
+      setShowNew(false); setForm({ name:'', description:'' }); load();
+    } catch(e) { setErr(e.message); }
+  };
+
+  const deleteProject = async (id, e) => {
+    e.stopPropagation();
+    if (!confirm('Delete project and all tasks?')) return;
+    await apiFetch(`/api/projects/${id}`, { method: 'DELETE' });
+    load();
+  };
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div className="topbar">
+        <div className="topbar-title">Projects</div>
+        <div className="topbar-spacer"/>
+        <button className="btn btn-primary btn-sm" onClick={()=>setShowNew(true)}>
+          <Icon name="plus" size={12}/> New Project
+        </button>
+      </div>
+      <div className="content">
+        {loading ? <div className="loading">Loading…</div> : (
+          <div className="projects-grid">
+            {projects.map(p => (
+              <div key={p.id} className="project-card" onClick={()=>onSelect(p)}>
+                <div className="project-name">{p.name}</div>
+                <div className="project-desc">{p.description || 'No description'}</div>
+                <div className="project-meta">
+                  <span>👤 {p.owner_name}</span>
+                  <span>✓ {p.task_count} tasks</span>
+                  {(user.role==='admin'||p.owner_id===user.id) && (
+                    <span style={{marginLeft:'auto'}} onClick={e=>deleteProject(p.id,e)}>
+                      <button className="btn btn-danger btn-sm" style={{padding:'2px 8px'}}>
+                        <Icon name="trash" size={11}/>
+                      </button>
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div className="project-add-card" onClick={()=>setShowNew(true)}>
+              <Icon name="plus" size={16}/> New Project
+            </div>
+          </div>
+        )}
+      </div>
+      {showNew && (
+        <Modal title="New Project" onClose={()=>setShowNew(false)}>
+          <div className="field"><label>Name *</label>
+            <input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Project name" />
+          </div>
+          <div className="field"><label>Description</label>
+            <textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="What's this project about?" />
+          </div>
+          {err && <div className="err-msg">{err}</div>}
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={()=>setShowNew(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={createProject}>Create Project</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ─── ADMIN SCREEN ────────────────────────────────────────────────────────────
+function AdminScreen({ user }) {
+  const [users, setUsers]   = useState([]);
+  const [stats, setStats]   = useState(null);
+  const [editUser, setEditUser] = useState(null);
+  const [showAdd, setShowAdd]  = useState(false);
+  const [form, setForm]        = useState({ username:'', email:'', password:'', role:'member' });
+  const [err, setErr]          = useState('');
+  const [loading, setLoading]  = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [u, s] = await Promise.all([
+        apiFetch('/api/users'),
+        apiFetch('/api/admin/stats'),
+      ]);
+      setUsers(u.users); setStats(s.stats);
+    } catch {}
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const deleteUser = async (id) => {
+    if (!confirm('Remove this user?')) return;
+    await apiFetch(`/api/users/${id}`, { method: 'DELETE' });
+    load();
+  };
+
+  const saveEdit = async () => {
+    try {
+      const body = {};
+      if (editUser._new_pass) body.password = editUser._new_pass;
+      if (editUser.role) body.role = editUser.role;
+      if (editUser.email) body.email = editUser.email;
+      await apiFetch(`/api/users/${editUser.id}`, { method: 'PATCH', body: JSON.stringify(body) });
+      setEditUser(null); load();
+    } catch(e) { setErr(e.message); }
+  };
+
+  const createUser = async () => {
+    if (!form.username||!form.email||!form.password) { setErr('All fields required'); return; }
+    try {
+      // Register via auth endpoint
+      await apiFetch('/api/auth/register', { method: 'POST', body: JSON.stringify(form) });
+      // Set role if admin
+      if (form.role === 'admin') {
+        const newUsers = await apiFetch('/api/users');
+        const nu = newUsers.users.find(u=>u.username===form.username);
+        if (nu) await apiFetch(`/api/users/${nu.id}`, { method: 'PATCH', body: JSON.stringify({ role: 'admin' }) });
+      }
+      setShowAdd(false); setForm({ username:'', email:'', password:'', role:'member' }); load();
+    } catch(e) { setErr(e.message); }
+  };
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div className="topbar">
+        <div className="topbar-title"><Icon name="shield" size={14}/>&nbsp; Admin Panel</div>
+        <div className="topbar-spacer"/>
+        <button className="btn btn-primary btn-sm" onClick={()=>setShowAdd(true)}>
+          <Icon name="plus" size={12}/> Add User
+        </button>
+      </div>
+      <div className="content">
+        {loading ? <div className="loading">Loading…</div> : (
+          <>
+            {stats && (
+              <div className="admin-grid">
+                <div className="stat-card">
+                  <div className="stat-num">{stats.users}</div>
+                  <div className="stat-label">Total Users</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-num">{stats.projects}</div>
+                  <div className="stat-label">Projects</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-num">{stats.tasks}</div>
+                  <div className="stat-label">Total Tasks</div>
+                </div>
+                {Object.entries(stats.byStatus||{}).map(([s,c])=>(
+                  <div key={s} className="stat-card">
+                    <div className={`stat-num tag-${s}`} style={{fontSize:22}}>{c}</div>
+                    <div className="stat-label">{s.replace('_',' ')}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="section-header">
+              <div className="section-title">Users</div>
+            </div>
+            <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflow:'hidden'}}>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Username</th><th>Email</th><th>Role</th><th>Joined</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(u => (
+                    <tr key={u.id}>
+                      <td style={{fontFamily:'Space Mono, monospace',fontSize:12}}>{u.username}</td>
+                      <td style={{color:'var(--text2)',fontSize:12}}>{u.email}</td>
+                      <td><span className={`role-badge role-${u.role}`}>{u.role}</span></td>
+                      <td style={{color:'var(--text3)',fontSize:11}}>{u.created_at?.slice(0,10)}</td>
+                      <td>
+                        <div style={{display:'flex',gap:6}}>
+                          <button className="btn btn-ghost btn-sm" onClick={()=>setEditUser({...u,_new_pass:''})}>
+                            <Icon name="edit" size={11}/>
+                          </button>
+                          {u.id !== user.id && (
+                            <button className="btn btn-danger btn-sm" onClick={()=>deleteUser(u.id)}>
+                              <Icon name="trash" size={11}/>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Edit user modal */}
+      {editUser && (
+        <Modal title={`Edit: ${editUser.username}`} onClose={()=>setEditUser(null)}>
+          <div className="field"><label>Email</label>
+            <input value={editUser.email} onChange={e=>setEditUser({...editUser,email:e.target.value})} />
+          </div>
+          <div className="field"><label>Role</label>
+            <select value={editUser.role} onChange={e=>setEditUser({...editUser,role:e.target.value})}>
+              <option value="member">member</option>
+              <option value="admin">admin</option>
+            </select>
+          </div>
+          <div className="field"><label>New Password (leave blank to keep)</label>
+            <input type="password" value={editUser._new_pass}
+              onChange={e=>setEditUser({...editUser,_new_pass:e.target.value})}
+              placeholder="Enter new password" />
+          </div>
+          {err && <div className="err-msg">{err}</div>}
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={()=>setEditUser(null)}>Cancel</button>
+            <button className="btn btn-primary" onClick={saveEdit}>Save Changes</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Add user modal */}
+      {showAdd && (
+        <Modal title="Add New User" onClose={()=>setShowAdd(false)}>
+          <div className="field"><label>Username</label>
+            <input value={form.username} onChange={e=>setForm({...form,username:e.target.value})} />
+          </div>
+          <div className="field"><label>Email</label>
+            <input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} />
+          </div>
+          <div className="field"><label>Password</label>
+            <input type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} />
+          </div>
+          <div className="field"><label>Role</label>
+            <select value={form.role} onChange={e=>setForm({...form,role:e.target.value})}>
+              <option value="member">member</option>
+              <option value="admin">admin</option>
+            </select>
+          </div>
+          {err && <div className="err-msg">{err}</div>}
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={()=>setShowAdd(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={createUser}>Create User</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ─── APP SHELL ───────────────────────────────────────────────────────────────
+function App() {
+  const [user, setUser]               = useState(null);
+  const [checking, setChecking]       = useState(true);
+  const [page, setPage]               = useState('projects');
+  const [activeProject, setProject]   = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      if (getToken()) {
+        try {
+          const d = await apiFetch('/api/auth/me');
+          setUser(d.user);
+        } catch { clearToken(); }
+      }
+      setChecking(false);
+    })();
+  }, []);
+
+  if (checking) return (
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',color:'var(--text3)',fontFamily:'Space Mono, monospace',fontSize:13}}>
+      TRACKER.
+    </div>
+  );
+
+  if (!user) return <AuthScreen onLogin={u => setUser(u)} />;
+
+  const logout = () => { clearToken(); setUser(null); };
+
+  const navItems = [
+    { id: 'projects', icon: 'folder', label: 'Projects' },
+    ...(user.role === 'admin' ? [{ id: 'admin', icon: 'shield', label: 'Admin' }] : []),
+  ];
+
+  const handleSelectProject = (p) => {
+    setProject(p);
+    setPage('project');
+  };
+
+  return (
+    <div className="app">
+      <div className="sidebar">
+        <div className="sidebar-logo">TRACKER<span>.</span></div>
+        <div className="sidebar-section">Navigation</div>
+        {navItems.map(item => (
+          <div key={item.id} className={`nav-item ${page===item.id?'active':''}`}
+            onClick={() => { setPage(item.id); setProject(null); }}>
+            <span className="icon"><Icon name={item.icon} size={13}/></span>
+            {item.label}
+          </div>
+        ))}
+        <div className="sidebar-spacer"/>
+        <div className="sidebar-user">
+          <div className="sidebar-user-name">{user.username}</div>
+          <div className="sidebar-user-role">{user.role}</div>
+          <button className="btn btn-ghost btn-sm" style={{marginTop:10,width:'100%',justifyContent:'center'}} onClick={logout}>
+            <Icon name="logout" size={12}/> Sign Out
+          </button>
+        </div>
+      </div>
+
+      <div className="main">
+        {page === 'projects' && !activeProject && (
+          <ProjectsScreen user={user} onSelect={handleSelectProject} />
+        )}
+        {page === 'project' && activeProject && (
+          <ProjectView project={activeProject} user={user} onBack={()=>{ setPage('projects'); setProject(null); }} />
+        )}
+        {page === 'admin' && user.role === 'admin' && (
+          <AdminScreen user={user} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
