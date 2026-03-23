@@ -525,11 +525,11 @@ function Modal({ title, onClose, children }) {
 }
 
 // ─── TASK FORM ───────────────────────────────────────────────────────────────
-function TaskForm({ projectId, task, members, onSave, onClose }) {
+function TaskForm({ projectId, task, members, onSave, onClose, defaultStatus }) {
   const [form, setForm] = useState({
     title: task?.title||'',
     description: task?.description||'',
-    status: task?.status||'todo',
+    status: task?.status || defaultStatus || 'todo',
     priority: task?.priority||'medium',
     assignee_id: task?.assignee_id||'',
     due_date: task?.due_date?.slice(0,10)||'',
@@ -652,7 +652,7 @@ function KanbanView({ tasks, members, projectId, onRefresh }) {
       {addingTo && (
         <Modal title="New Task" onClose={() => setAddingTo(null)}>
           <TaskForm projectId={projectId} members={members}
-            task={{ status: addingTo }}
+            defaultStatus={addingTo}
             onSave={() => { setAddingTo(null); onRefresh(); }}
             onClose={() => setAddingTo(null)} />
         </Modal>
